@@ -6,6 +6,7 @@ provider "aws" {
 
 resource "aws_instance" "myec2" {
   ami           = var.ami
+  iam_instance_profile = "prometheus"
   instance_type = var.instance_type
   count         = 1
   key_name      = "Webserver"
