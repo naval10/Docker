@@ -1,0 +1,71 @@
+- hosts: dev_*
+  gather_facts: no
+
+  tasks:
+
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+        cache_valid_time: 3600
+
+    - name: install docker sdk
+      apt:
+        name: python3-pip, docker.io
+        update_cache: yes
+        state: present
+        cache_valid_time: 3600
+
+    - name: install python3-docker
+      pip:
+        name: docker
+        state: present
+
+    - name: create file
+      file:
+        path: /tmp/docker
+        state: directory
+
+    - name: copy files
+      copy:
+        src: "~/jenkins/workspace/docker/{{ item }}"
+        dest: /tmp/docker
+        owner: ubuntu
+      with_items:
+        - docker/Dockerfile
+        - target/addressbook.war
+
+    - name: build image
+      docker_image:
+        name: nevaly/myapp
+        tag: v1.0
+        source: build
+        build:
+          path: /tmp/docker/
+          dockerfile: Dockerfile
+
+    - name: Load Docker credentials
+      include_vars:
+        file: ~/.docker/credentials.yaml
+        name: docker_credentials
+
+    - name: Log in to Docker Hub
+      docker_login:
+        username: "{{ docker_credentials.username }}"
+        password: "{{ docker_credentials.password }}"
+
+    - name: Push Docker image to Docker Hub
+      docker_image:
+        name: nevaly/myapp
+        tag: v1.0
+        push: yes
+        source: local
+
+    - name: create container
+      docker_container:
+        name: mydata
+        image: nevaly/myapp:v1.0
+        state: started
+        ports:
+          - "8080:8080"
+
