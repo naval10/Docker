@@ -55,7 +55,6 @@
           overlay
           br_netfilter
         dest: /etc/modules-load.d/containerd.conf
-      notify: Load containerd modules
 
     - name: Load Container modules
       command: modprobe {{ item }}
