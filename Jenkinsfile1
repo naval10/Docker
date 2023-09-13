@@ -48,7 +48,7 @@ pipeline {
         
         stage('Stash folders'){
             steps{
-                sh 'tar -cvf demo.tar ansible docker target/addressbook.war'
+                sh 'tar -cvf demo.tar ansible'
                 stash(includes: 'demo.tar', name: 'files')
             }
         }
@@ -67,7 +67,7 @@ pipeline {
                 label 'ansible-agent'
             }
             steps{
-                sh 'ansible-playbook ansible/playbooks/Kube.yml -i ansible/inventories/production/aws_ec2.yml'
+                sh 'ansible-playbook ansible/playbooks/kube.yml -i ansible/inventories/production/aws_ec2.yml'
             }
         }
     }
