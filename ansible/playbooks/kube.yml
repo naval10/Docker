@@ -88,8 +88,8 @@
         state: restarted
 
     - name: Reload systemd manager configuration
-      systemd:
-        daemon_reload: yes
+      service:
+        name: daemon
         state: reloaded
 
     - name: Start kubelet service
