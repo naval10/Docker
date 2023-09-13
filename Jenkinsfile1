@@ -48,7 +48,7 @@ pipeline {
         
         stage('Stash folders'){
             steps{
-                sh 'sudo tar -cvf demo.tar ansible docker target/addressbook.war'
+                sh 'tar -cvf demo.tar ansible docker target/addressbook.war'
                 stash(includes: 'demo.tar', name: 'files')
             }
         }
