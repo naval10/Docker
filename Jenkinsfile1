@@ -40,14 +40,6 @@ pipeline {
             }
         }
         
-        stage('Code coverage'){
-            steps{
-                withSonarQubeEnv('Sonarqube'){
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=docker'
-                }
-            }
-        }
-        
         stage('Package'){
             steps{
                 sh 'mvn package'
