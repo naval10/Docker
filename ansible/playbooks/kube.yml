@@ -1,0 +1,106 @@
+- hosts: Kube_*
+  gather_facts: no
+
+  tasks:
+    - name: Update and Upgrade packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+        cache_valid_time: 3600
+    
+    - name: Install package
+      apt:
+        name: apt-transport-https
+        state: present
+
+    - name: Download Kubernetes GPG Key
+      get_url:
+        url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+        dest: "/tmp/apt-key.gpg"
+
+    - name: Add the GPG key to APT keyring
+      apt_key:
+        state: present
+        keyserver: ""
+        data: "/tmp/apt-key.gpg"
+
+    - name: Remove the downloaded GPG key
+      file:
+        path: "/tmp/apt-key.gpg"
+        state: absent
+    
+    - name: Create Kubernetes sources.list file
+      copy:
+        content: |
+          deb https://apt.kubernetes.io/ kubernetes-xenial main
+        dest: /etc/apt/sources.list.d/kubernetes.list
+
+    - name: Disable Swap
+      command: swapoff -a
+
+    - name: Edit file contents
+      command: sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+    - name: Install kubernetes packages
+      apt:
+        update_cache: yes
+        name: kubelet, kubectl, kubeadm, containerd
+        state: present
+
+    - name: Prevent package upgrade or removal
+      command: apt-mark hold kubelet containerd kubeadm kubectl kubernetes-cni
+
+    - name: Create container.dconf file
+      copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/containerd.conf
+      notify: Load containerd modules
+
+    - name: Load Container modules
+      command: modprobe {{ item }}
+      loop:
+        - overlay
+        - br_netfilter
+      ignore_errors: yes
+
+    - name: Setup of sysctl params
+      copy:
+        content: |
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.ipv4.ip_forward                 = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+        dest: /etc/sysctl.d/99-kubernetes-cri.conf
+
+    - name: apply sysctl params
+      command: sysctl --system
+      
+    - name: Configure Conatinerd
+      file:
+        path: /etc/containerd
+        state: directory
+
+    - name: Configure containerd config file
+      command: containerd config default | sudo tee /etc/containerd/config.toml
+
+    - name: restart containerd
+      service:
+        name: containerd
+        state: restarted
+
+    - name: Reload systemd manager configuration
+      systemd:
+        name: systemd
+        state: reloaded
+
+    - name: Start kubelet service
+      systemd:
+        name: kubelet
+        state: started
+    - name: Enable Kubelet service to start at boot
+      systemd:
+        name: kubelet
+        enabled: yes
+
+

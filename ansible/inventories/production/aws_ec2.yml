@@ -3,7 +3,7 @@ regions:
   - "us-east-1"
 keyed_groups:
   - key: tags.Name
-    prefix: dev
+    prefix: Kube
 filters:
   tag:Name: dev
   instance-state-name : running
