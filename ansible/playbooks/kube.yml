@@ -87,15 +87,11 @@
         name: containerd
         state: restarted
 
-    - name: Reload systemd manager configuration
-      service:
-        name: daemon
-        state: reloaded
-
     - name: Start kubelet service
       systemd:
         name: kubelet
         state: started
+        daemon_reload: yes
     - name: Enable Kubelet service to start at boot
       systemd:
         name: kubelet
