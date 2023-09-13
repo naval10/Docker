@@ -21,8 +21,7 @@
     - name: Add the GPG key to APT keyring
       apt_key:
         state: present
-        keyserver: ""
-        data: "/tmp/apt-key.gpg"
+        file: "/tmp/apt-key.gpg"
 
     - name: Remove the downloaded GPG key
       file:
