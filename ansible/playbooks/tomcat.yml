@@ -1,0 +1,82 @@
+- hosts: dev-*
+  gather_facts: no
+  tasks:
+
+    - name: Update and upgrade apt packages
+      apt:
+        update_cache: yes
+        upgrade: yes
+        cache_valid_time: 3600
+
+    - name: Install java for tomcat
+      apt:
+        name: default-jdk
+        state: present
+
+    - name: Create group for tomcat user
+      group:
+        name: tomcat
+        state: present
+
+    - name: Create user tomcat and add him to group
+      user:
+        name: tomcat
+        group: tomcat
+        shell: /bin/false
+        home: /opt/tomcat
+
+    - name: Downlaod and Unarchive the tomcat file
+      unarchive:
+        src: https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.13/bin/apache-tomcat-10.1.13.tar.gz
+        dest: /opt/tomcat
+        remote_src: yes
+        extra_opts: [ --strip-components=1 ]
+
+    - name: Change file group and permissions
+      file:
+        path: /opt/tomcat
+        owner: tomcat
+        group: tomcat
+        recurse: yes  
+
+    - name: Chnage file permissions 
+      file:
+        path: /opt/tomcat/conf
+        mode: g+rx
+    
+    - name: Add code for tomcat service
+      copy:
+        dest: /etc/systemd/system/tomcat.service
+        content: | 
+          [Unit]
+          Description=Apache Tomcat Web Application Container
+          After=network.target
+
+          [Service]
+          Type=forking
+          Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/jre/bin/java
+          Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
+          Environment=CATALINA_HOME=/opt/tomcat
+          Environment=CATALINA_BASE=/opt/tomcat
+          Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+          Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+          ExecStart=/opt/tomcat/bin/startup.sh
+          ExecStop=/opt/tomcat/bin/shutdown.sh
+          User=tomcat
+          Group=tomcat
+          UMask=0007
+          RestartSec=10
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Reload systemd daemon
+      systemd:
+        state: reloaded
+
+    - name: Start Tomcat
+      systemd:
+        name: tomcat
+        state: started
+
