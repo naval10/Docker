@@ -72,6 +72,11 @@
           [Install]
           WantedBy=multi-user.target
 
+    - name: Copy files to tomcat server
+      copy:
+        src: /jekins/workspace/docker/addressbook.war
+        dest: /opt/tomcat/webapps
+
     - name: Start Tomcat
       systemd:
         name: tomcat
