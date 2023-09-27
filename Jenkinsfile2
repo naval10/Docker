@@ -1,0 +1,101 @@
+pipeline {
+    agent any
+    tools {
+        terraform 'terraform'
+        maven 'maven'
+    }
+    
+    stages{
+        stage('Clone Repo'){
+            steps{
+                git branch: 'main', credentialsId: 'GithubID', url: 'https://github.com/naval10/Docker.git'
+            }
+        }
+        
+        stage('Run terraform code'){
+            steps{
+                dir('/var/lib/jenkins/workspace/docker/terraform/'){
+                    sh 'terraform init'
+                    sh 'terraform plan'
+                    sh 'terraform apply --auto-approve'
+                }
+            }
+        }
+        
+        stage('Compile'){
+            steps{
+                sh 'mvn compile'
+            }
+        }
+        
+        stage('Unit Test'){
+            steps{
+                sh 'mvn test'
+            }
+        }
+        
+        stage('Code Review'){
+            steps{
+                sh 'mvn pmd:pmd'
+            }
+        }
+        
+        stage('Package'){
+            steps{
+                sh 'mvn package'
+            }
+        }
+        
+        stage('Stash folders'){
+            steps{
+                sh 'tar -cvf demo.tar ansible'
+                stash(includes: 'demo.tar', name: 'files')
+            }
+        }
+        
+        stage('Copy folders to Slave'){
+            agent {
+                label 'ansible-agent'
+            }
+            steps{
+                unstash 'files'
+                sh 'tar -xvf demo.tar'
+            }
+        }
+        stage('Run Playbook'){
+            agent{
+                label 'ansible-agent'
+            }
+            steps{
+                sh 'ansible-playbook ansible/playbooks/kube.yml -i ansible/inventories/production/aws_ec2.yml'
+            }
+        }
+    }
+    
+    post{
+        success{
+            withCredentials([[$class:'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY', credentialsId: 'credentials']]){
+                script{
+                    snsPublish(
+                        message: "Please go to '${BUILD_URL}' and verify the build",
+                        subject: "Job '${JOB_NAME}' (${BUILD_NUMBER}) ran with status success",
+                        topicArn: 'arn:aws:sns:us-east-1:490662223625:jenkins'
+                    )   
+                }
+                
+            }   
+        }
+        failure{
+            withCredentials([[$class:'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY', credentialsId: 'credentials']]){
+                script{
+                    snsPublish(
+                        message: "Please go to '${BUILD_URL}' and verify the build",
+                        subject: "Job '${JOB_NAME}' (${BUILD_NUMBER}) ran with status failure",
+                        topicArn: 'arn:aws:sns:us-east-1:490662223625:jenkins'
+                    )   
+                }
+                
+            }
+        }
+    }
+}
