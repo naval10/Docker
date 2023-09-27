@@ -41,7 +41,9 @@
 
     - name: Chnage file permissions 
       file:
-        path: /opt/tomcat/conf
+        path: /opt/tomcat/conf/
+        recurse: yes
+        state: directory
         mode: g+rx
     
     - name: Add code for tomcat service
@@ -54,7 +56,6 @@
 
           [Service]
           Type=forking
-          Environment=JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64/jre/bin/java
           Environment=CATALINA_PID=/opt/tomcat/temp/tomcat.pid
           Environment=CATALINA_HOME=/opt/tomcat
           Environment=CATALINA_BASE=/opt/tomcat
@@ -71,12 +72,9 @@
           [Install]
           WantedBy=multi-user.target
 
-    - name: Reload systemd daemon
-      systemd:
-        state: reloaded
-
     - name: Start Tomcat
       systemd:
         name: tomcat
         state: started
+        daemon_reload: yes
 
