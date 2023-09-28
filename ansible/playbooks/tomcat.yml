@@ -76,6 +76,7 @@
       copy:
         src: /jenkins/workspace/docker/target/addressbook.war
         dest: /opt/tomcat/webapps
+        remote_src: yes
 
     - name: Start Tomcat
       systemd:
