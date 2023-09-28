@@ -74,7 +74,7 @@
 
     - name: Copy files to tomcat server
       copy:
-        src: /jekins/workspace/docker/addressbook.war
+        src: /jenkins/workspace/docker/target/addressbook.war
         dest: /opt/tomcat/webapps
 
     - name: Start Tomcat
