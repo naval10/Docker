@@ -74,7 +74,7 @@
 
     - name: Copy files to tomcat server
       copy:
-        src: $HOME/jenkins/workspace/docker/target/addressbook.war
+        src: /home/ansible/jenkins/workspace/docker/target/addressbook.war
         dest: /opt/tomcat/webapps
         remote_src: yes
 
