@@ -76,7 +76,7 @@
       copy:
         src: /home/ansible/jenkins/workspace/docker/target/addressbook.war
         dest: /opt/tomcat/webapps
-        remote_src: yes
+        remote_src: no
 
     - name: Start Tomcat
       systemd:
